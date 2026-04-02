@@ -278,20 +278,20 @@ function getSavingsTips(oldResult, newResult, inputs) {
   const current80C = ded.section80C || 0;
   if (current80C < 150000) {
     const gap = 150000 - current80C;
-    tips.push({ type: "invest", icon: "💰", label: `Invest ₹${fmt(gap)} more under 80C`, detail: `Max out PPF, ELSS or EPF. Save up to ₹${fmt(Math.round(gap * 0.3))} in taxes.` });
+    tips.push({ type: "invest", icon: "💰", label: `Invest ₹${fmt(gap)} more under 80C (Only for Old Regime)`, detail: `Max out PPF, ELSS or EPF. Save up to ₹${fmt(Math.round(gap * 0.3))} in taxes.` });
   }
   if (!(ded.section80D_self) || ded.section80D_self === 0) {
-    tips.push({ type: "invest", icon: "🏥", label: "Claim health insurance (80D)", detail: "A family floater plan gives ₹25,000 deduction. Add parents for another ₹25,000-₹50,000." });
+    tips.push({ type: "invest", icon: "🏥", label: "Claim health insurance (80D) (Only for Old Regime)", detail: "A family floater plan gives ₹25,000 deduction. Add parents for another ₹25,000-₹50,000." });
   }
   if (!(ded.section80CCD1B) || ded.section80CCD1B < 50000) {
     const gap = 50000 - (ded.section80CCD1B || 0);
-    tips.push({ type: "invest", icon: "📈", label: `Invest ₹${fmt(gap)} more in NPS (80CCD-1B)`, detail: `Extra ₹50,000 deduction OVER the 80C limit. Tax saving: up to ₹${fmt(Math.round(gap * 0.3))}.` });
+    tips.push({ type: "invest", icon: "📈", label: `Invest ₹${fmt(gap)} more in NPS (80CCD-1B) (Only for Old Regime)`, detail: `Extra ₹50,000 deduction OVER the 80C limit. Tax saving: up to ₹${fmt(Math.round(gap * 0.3))}.` });
   }
   if (!inputs.hraReceived) {
-    tips.push({ type: "info", icon: "🏠", label: "Paying rent? Claim HRA", detail: "Enter HRA details to get a significant tax exemption under Section 10(13A)." });
+    tips.push({ type: "info", icon: "🏠", label: "Paying rent? Claim HRA (Only for Old Regime)", detail: "Enter HRA details to get a significant tax exemption under Section 10(13A)." });
   }
   if (!ded.homeLoanInterest) {
-    tips.push({ type: "info", icon: "🏡", label: "Home loan interest deduction", detail: "Claim up to ₹2,00,000 interest deduction under Section 24(b)." });
+    tips.push({ type: "info", icon: "🏡", label: "Home loan interest deduction (Only for Old Regime)", detail: "Claim up to ₹2,00,000 interest deduction under Section 24(b)." });
   }
   return tips;
 }
@@ -1273,10 +1273,14 @@ export default function TaxCalculator() {
                   <button
                     type="button"
                     onClick={() => setShowGuide(true)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-800/80 text-xs font-bold text-slate-300 transition-all hover:border-amber-400 hover:text-amber-300"
+                    title="Tax information"
+                    className="group relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-400/35 bg-sky-400/12 text-xs font-bold text-sky-200 shadow-sm shadow-sky-500/10 transition-all hover:border-sky-300 hover:bg-sky-400/18 hover:text-white hover:shadow-sky-400/20"
                     aria-label="How to use this tool"
                   >
                     i
+                    <span className="pointer-events-none absolute right-full mr-2 whitespace-nowrap rounded-full border border-sky-400/25 bg-slate-900/95 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-sky-200 opacity-0 transition-all duration-200 group-hover:opacity-100">
+                      Tax Information
+                    </span>
                   </button>
                   <div className="inline-flex rounded-full border border-slate-700 bg-slate-800/80 p-1">
                     {[["annual", "Annual"], ["monthly", "Monthly"]].map(([key, label]) => (
@@ -1295,7 +1299,7 @@ export default function TaxCalculator() {
                   </div>
                   <button
                     onClick={handleReset}
-                    className="rounded-full border border-slate-700 bg-slate-800/80 px-3 py-1 text-[11px] font-semibold text-slate-300 transition-all hover:border-slate-500 hover:text-white"
+                    className="rounded-full border border-rose-400/30 bg-rose-400/10 px-3 py-1 text-[11px] font-semibold text-rose-200 transition-all hover:border-rose-300/50 hover:bg-rose-400/15 hover:text-white"
                   >
                     Reset
                   </button>
@@ -1408,7 +1412,7 @@ export default function TaxCalculator() {
             {/* Deductions */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3">
               <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Investments & Deductions</div>
-              <p className="text-xs text-slate-500">
+              <p className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs font-medium text-amber-300 leading-relaxed">
                 Old Regime uses all deductions. New Regime uses {NEW_REGIME_DEDUCTIONS.map((d) => d.section).join(", ") || "none"}.
               </p>
               {BASIC_DEDUCTIONS.map((d) => (
@@ -1443,8 +1447,8 @@ export default function TaxCalculator() {
             </button>
             {calculated && (
               <button onClick={handleReset}
-                className="w-full py-3 bg-transparent hover:bg-slate-800 text-slate-400 hover:text-white font-semibold text-sm
-                  rounded-2xl border border-slate-700 hover:border-slate-500 transition-all duration-200">
+                className="w-full py-3 bg-rose-400/8 hover:bg-rose-400/14 text-rose-200 hover:text-white font-semibold text-sm
+                  rounded-2xl border border-rose-400/25 hover:border-rose-300/45 transition-all duration-200">
                 ↺ Reset & Start Over
               </button>
             )}
