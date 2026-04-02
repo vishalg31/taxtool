@@ -1,0 +1,223 @@
+{
+  "_meta": {
+    "fy": "2025-26",
+    "ay": "2026-27",
+    "applicableTo": "Resident Individual Salaried",
+    "defaultRegime": "new",
+    "cess": {
+      "type": "Health & Education Cess",
+      "rate": 0.04,
+      "appliesOn": "tax_plus_surcharge"
+    },
+    "notes": [
+      "New regime is default from AY 2024-25 onwards (Sec 115BAC).",
+      "Taxpayer must file Form 10IEA to opt for old regime (for business income; salaried can choose at ITR filing).",
+      "Rebate u/s 87A is applied BEFORE cess, AFTER surcharge.",
+      "Marginal relief on surcharge is supported but complex — flagged separately."
+    ]
+  },
+
+  "regimes": {
+
+    "new": {
+      "name": "New Tax Regime",
+      "section": "115BAC",
+      "isDefault": true,
+      "standardDeduction": {
+        "salaried": 75000,
+        "pensioner": 75000
+      },
+      "basicExemptionLimit": 400000,
+      "slabs": [
+        { "min": 0,       "max": 400000,  "rate": 0.00 },
+        { "min": 400000,  "max": 800000,  "rate": 0.05 },
+        { "min": 800000,  "max": 1200000, "rate": 0.10 },
+        { "min": 1200000, "max": 1600000, "rate": 0.15 },
+        { "min": 1600000, "max": 2000000, "rate": 0.20 },
+        { "min": 2000000, "max": 2400000, "rate": 0.25 },
+        { "min": 2400000, "max": null,    "rate": 0.30 }
+      ],
+      "rebate87A": {
+        "maxTaxableIncome": 1200000,
+        "maxRebate": 60000,
+        "note": "Rebate = min(tax_before_cess, 60000). Applicable only if taxable income <= 12L."
+      },
+      "surcharge": [
+        { "minIncome": 5000000,  "maxIncome": 10000000, "rate": 0.10 },
+        { "minIncome": 10000000, "maxIncome": 20000000, "rate": 0.15 },
+        { "minIncome": 20000000, "maxIncome": null,      "rate": 0.25 }
+      ],
+      "surchargeCap": 0.25,
+      "marginalRelief": true,
+      "allowedDeductions": [
+        { "section": "80CCD(2)", "description": "Employer NPS contribution", "cap": null, "note": "Up to 14% of salary for central govt employees, 10% otherwise. NOT subject to 1.5L cap." },
+        { "section": "80JJAA",  "description": "Employment of new employees", "cap": null, "note": "Rarely applicable for salaried." },
+        { "section": "10(13A)", "description": "HRA", "cap": null, "note": "UNCERTAINTY: As of FY2025-26, HRA exemption u/s 10(13A) is NOT available under new regime. Confirm with official notification." }
+      ],
+      "disallowedDeductions": [
+        "80C (PPF, ELSS, LIC, EPF employee contribution, etc.)",
+        "80CCC (Pension fund)",
+        "80CCD(1) (NPS employee contribution)",
+        "80CCD(1B) (Additional NPS ₹50,000)",
+        "80D (Health insurance)",
+        "80DD (Disabled dependent)",
+        "80DDB (Medical treatment)",
+        "80E (Education loan interest)",
+        "80EE (Home loan interest — first-time buyers)",
+        "80EEA (Affordable housing loan interest)",
+        "80G (Donations)",
+        "80GG (Rent paid — no HRA)",
+        "80TTA (Savings account interest)",
+        "80TTB (Senior citizen interest)",
+        "HRA exemption u/s 10(13A)",
+        "LTA exemption u/s 10(5)",
+        "Section 24(b) home loan interest",
+        "Professional tax u/s 16(iii)"
+      ]
+    },
+
+    "old": {
+      "name": "Old Tax Regime",
+      "isDefault": false,
+      "standardDeduction": {
+        "salaried": 50000,
+        "pensioner": 50000
+      },
+      "ageCategorySlabs": {
+        "below60": {
+          "label": "Below 60 years",
+          "basicExemptionLimit": 250000,
+          "slabs": [
+            { "min": 0,       "max": 250000,  "rate": 0.00 },
+            { "min": 250000,  "max": 500000,  "rate": 0.05 },
+            { "min": 500000,  "max": 1000000, "rate": 0.20 },
+            { "min": 1000000, "max": null,    "rate": 0.30 }
+          ]
+        },
+        "senior": {
+          "label": "Senior Citizen (60–79 years)",
+          "basicExemptionLimit": 300000,
+          "slabs": [
+            { "min": 0,       "max": 300000,  "rate": 0.00 },
+            { "min": 300000,  "max": 500000,  "rate": 0.05 },
+            { "min": 500000,  "max": 1000000, "rate": 0.20 },
+            { "min": 1000000, "max": null,    "rate": 0.30 }
+          ]
+        },
+        "superSenior": {
+          "label": "Super Senior Citizen (80+ years)",
+          "basicExemptionLimit": 500000,
+          "slabs": [
+            { "min": 0,       "max": 500000,  "rate": 0.00 },
+            { "min": 500000,  "max": 1000000, "rate": 0.20 },
+            { "min": 1000000, max: null,    "rate": 0.30 }
+          ]
+        }
+      },
+      "rebate87A": {
+        "maxTaxableIncome": 500000,
+        "maxRebate": 12500,
+        "note": "Rebate = min(tax_before_cess, 12500). Not available to super seniors (already fully exempt up to 5L)."
+      },
+      "surcharge": [
+        { "minIncome": 5000000,  "maxIncome": 10000000, "rate": 0.10 },
+        { "minIncome": 10000000, "maxIncome": 20000000, "rate": 0.15 },
+        { "minIncome": 20000000, "maxIncome": 50000000, "rate": 0.25 },
+        { "minIncome": 50000000, "maxIncome": null,      "rate": 0.37 }
+      ],
+      "surchargeCap": 0.37,
+      "marginalRelief": true,
+      "allowedDeductions": [
+        {
+          "section": "16(ia)",
+          "description": "Standard deduction for salaried",
+          "cap": 50000
+        },
+        {
+          "section": "10(13A)",
+          "description": "HRA Exemption",
+          "cap": null,
+          "calculationRule": "hra_exemption",
+          "note": "Least of: (1) Actual HRA received, (2) Rent paid - 10% of basic+DA, (3) 50% of basic+DA (metro) or 40% (non-metro)"
+        },
+        {
+          "section": "80C",
+          "description": "Investments (PPF, ELSS, LIC, EPF employee, NSC, tuition fees, principal home loan repayment, etc.)",
+          "cap": 150000,
+          "combinedWith": ["80CCC", "80CCD(1)"],
+          "combinedCap": 150000
+        },
+        {
+          "section": "80CCC",
+          "description": "Pension fund contribution",
+          "cap": 150000,
+          "combinedWith": ["80C", "80CCD(1)"],
+          "combinedCap": 150000
+        },
+        {
+          "section": "80CCD(1)",
+          "description": "NPS employee contribution",
+          "cap": 150000,
+          "combinedWith": ["80C", "80CCC"],
+          "combinedCap": 150000
+        },
+        {
+          "section": "80CCD(1B)",
+          "description": "Additional NPS contribution (over and above 80C cap)",
+          "cap": 50000,
+          "isOverAndAbove80C": true
+        },
+        {
+          "section": "80CCD(2)",
+          "description": "Employer NPS contribution",
+          "cap": null,
+          "note": "Up to 10% of Basic+DA for private sector; 14% for central govt employees. Not subject to 1.5L cap."
+        },
+        {
+          "section": "80D",
+          "description": "Health insurance premium",
+          "subcases": [
+            { "who": "self_family_below60",   "cap": 25000 },
+            { "who": "self_family_senior",    "cap": 50000 },
+            { "who": "parents_below60",       "cap": 25000 },
+            { "who": "parents_senior",        "cap": 50000 }
+          ],
+          "maxCombined": 100000,
+          "note": "Combined cap for self+family+parents is 1L if all are seniors."
+        },
+        {
+          "section": "24(b)",
+          "description": "Interest on home loan (self-occupied property)",
+          "cap": 200000,
+          "letOutProperty": "No cap (but total loss from HP capped at 2L set-off against salary)"
+        },
+        {
+          "section": "80TTA",
+          "description": "Interest on savings account (non-senior)",
+          "cap": 10000
+        },
+        {
+          "section": "80TTB",
+          "description": "Interest on deposits — senior citizens only",
+          "cap": 50000,
+          "note": "Replaces 80TTA for seniors. Includes FD/RD interest."
+        },
+        {
+          "section": "16(iii)",
+          "description": "Professional tax deduction",
+          "cap": 2500,
+          "note": "Actual professional tax paid, max 2500/year."
+        }
+      ],
+
+      "hraRule": {
+        "metroMultiplier": 0.50,
+        "nonMetroMultiplier": 0.40,
+        "metroCities": ["Mumbai", "Delhi", "Kolkata", "Chennai"],
+        "rentThresholdPercent": 0.10,
+        "basisForRentThreshold": "basic_plus_DA",
+        "exemption": "min(actualHRA, rentPaid - 10% of basic+DA, 50%/40% of basic+DA)"
+      }
+    }
+  }
+}
