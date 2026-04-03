@@ -210,6 +210,39 @@ function fmtCurrency(n) {
   return "₹" + Number(n).toLocaleString("en-IN");
 }
 
+function getSurchargeMeta(result, regime) {
+  const taxableIncome = Number(result?.taxableIncome || 0);
+  const bands = regime === "new"
+    ? [
+        { threshold: 5000000, rate: 10 },
+        { threshold: 10000000, rate: 15 },
+        { threshold: 20000000, rate: 25 },
+      ]
+    : [
+        { threshold: 5000000, rate: 10 },
+        { threshold: 10000000, rate: 15 },
+        { threshold: 20000000, rate: 25 },
+        { threshold: 50000000, rate: 37 },
+      ];
+
+  let matched = null;
+  for (const band of bands) {
+    if (taxableIncome > band.threshold) matched = band;
+  }
+
+  if (!matched) {
+    return {
+      rate: 0,
+      info: "Not applicable because taxable income is at or below ₹50 lakh. Surcharge is checked on taxable income, not gross salary.",
+    };
+  }
+
+  return {
+    rate: matched.rate,
+    info: `Applied at ${matched.rate}% because taxable income exceeds ₹${fmt(matched.threshold)}. Marginal relief is also considered near threshold crossings.`,
+  };
+}
+
 function getDeductionRows(result, regime) {
   if (!result?.deductionBreakdown) return [];
 
@@ -272,8 +305,10 @@ function getSavingsTips(oldResult, newResult, inputs) {
   const ded = inputs.deductions || {};
   if (oldResult.finalTax < newResult.finalTax) {
     tips.push({ type: "regime", icon: "🏆", label: "Old Regime saves you more", detail: `You save ${fmtCurrency(newResult.finalTax - oldResult.finalTax)} by staying in the Old Regime.` });
-  } else {
+  } else if (newResult.finalTax < oldResult.finalTax) {
     tips.push({ type: "regime", icon: "🏆", label: "New Regime saves you more", detail: `You save ${fmtCurrency(oldResult.finalTax - newResult.finalTax)} with the New Regime - simpler, no paperwork needed.` });
+  } else {
+    tips.push({ type: "regime", icon: "🏆", label: "Both regimes are equally good", detail: "Your final tax is the same in both regimes based on the current inputs." });
   }
   const current80C = ded.section80C || 0;
   if (current80C < 150000) {
@@ -885,6 +920,75 @@ function TipCard({ tip }) {
   );
 }
 
+const FAQ_ITEMS = [
+  {
+    question: "Which tax regime is better for salaried employees?",
+    answer:
+      "It depends on your salary structure, HRA, and deductions. Tax Finder compares both regimes instantly and highlights whichever gives the lower final tax based on your inputs.",
+  },
+  {
+    question: "Does this calculator include surcharge and cess?",
+    answer:
+      "Yes. The calculator includes Health and Education Cess at 4% and applies surcharge based on taxable income thresholds. It also considers marginal relief near surcharge thresholds.",
+  },
+  {
+    question: "Can I claim HRA in the new regime?",
+    answer:
+      "No. HRA exemption is generally available only under the old regime, which is why the tool uses HRA details only for old-regime tax calculation.",
+  },
+  {
+    question: "Which deductions are available in the old regime?",
+    answer:
+      "The old regime supports the broader deductions set in this tool, including 80C, 80CCD(1B), 80D, home loan interest, and advanced sections such as 80E, 80G, 80TTA or 80TTB, and more where eligible.",
+  },
+  {
+    question: "Does the calculator support 80CCD(2) employer NPS?",
+    answer:
+      "Yes. Tax Finder supports 80CCD(2) and caps it using Basic plus DA and employer type. This deduction is one of the few deductions that can also apply in the new regime.",
+  },
+  {
+    question: "Can I claim medical insurance in this calculator?",
+    answer:
+      "Yes. The calculator supports Section 80D for health insurance premiums. You can enter separate amounts for self and family and for parents, and senior citizen limits are handled separately.",
+  },
+];
+
+function FAQAccordion() {
+  const [openIndex, setOpenIndex] = useState(0);
+
+  return (
+    <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3">
+      <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Frequently Asked Questions</div>
+      <div className="space-y-2">
+        {FAQ_ITEMS.map((item, index) => {
+          const isOpen = openIndex === index;
+          return (
+            <div key={item.question} className="rounded-xl border border-slate-800 bg-slate-800/40 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setOpenIndex(isOpen ? -1 : index)}
+                className="w-full flex items-center justify-between gap-4 px-4 py-3 text-left"
+              >
+                <span className={`text-sm font-semibold transition-colors ${isOpen ? "text-white" : "text-slate-300"}`}>
+                  {item.question}
+                </span>
+                <span className={`text-xs font-bold transition-colors ${isOpen ? "text-amber-400" : "text-slate-500"}`}>
+                  {isOpen ? "−" : "+"}
+                </span>
+              </button>
+              {isOpen && (
+                <div className="border-t border-slate-700/50 px-4 py-3 text-sm leading-relaxed text-slate-400">
+                  {item.answer}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function GuideModal({ open, onClose }) {
   if (!open) return null;
 
@@ -929,14 +1033,15 @@ function GuideModal({ open, onClose }) {
                 <p><span className="font-semibold text-white">Final decision:</span> compare the final tax after 4% cess.</p>
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-800/40 p-4">
-              <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Important Notes</div>
-              <div className="mt-3 space-y-2 text-sm text-slate-200">
-                <p><span className="font-semibold text-white">80CCD(2):</span> capped from Basic + DA and employer type.</p>
-                <p><span className="font-semibold text-white">80C group:</span> 80C, 80CCC, and 80CCD(1) share one combined limit.</p>
-                <p><span className="font-semibold text-white">Medical sections:</span> senior citizen rules can change the cap.</p>
-              </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-800/40 p-4">
+            <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Important Notes</div>
+            <div className="mt-3 space-y-2 text-sm text-slate-200">
+              <p><span className="font-semibold text-white">80CCD(2):</span> capped from Basic + DA and employer type.</p>
+              <p><span className="font-semibold text-white">80C group:</span> 80C, 80CCC, and 80CCD(1) share one combined limit.</p>
+              <p><span className="font-semibold text-white">Medical sections:</span> senior citizen rules can change the cap.</p>
+              <p><span className="font-semibold text-white">Surcharge:</span> applies on taxable income, not gross salary. It starts at 10% above ₹50 lakh and 15% above ₹1 crore, with higher bands beyond that.</p>
             </div>
+          </div>
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-800/40 p-4">
@@ -1117,6 +1222,7 @@ export default function TaxCalculator() {
   const [results, setResults] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [showGuideNudge, setShowGuideNudge] = useState(false);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("new");
   const [calculated, setCalculated] = useState(false);
@@ -1200,6 +1306,21 @@ export default function TaxCalculator() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    const storageKey = "taxfinder-guide-nudge-seen";
+    try {
+      if (window.localStorage.getItem(storageKey)) return;
+      setShowGuideNudge(true);
+      window.localStorage.setItem(storageKey, "true");
+      const timer = window.setTimeout(() => setShowGuideNudge(false), 5000);
+      return () => window.clearTimeout(timer);
+    } catch {
+      setShowGuideNudge(true);
+      const timer = window.setTimeout(() => setShowGuideNudge(false), 5000);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen text-white" style={{
       fontFamily: "'DM Sans', system-ui, sans-serif",
@@ -1269,12 +1390,12 @@ export default function TaxCalculator() {
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Your Income</div>
-                <div className="flex items-center gap-2">
+                <div className="relative flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setShowGuide(true)}
                     title="Tax information"
-                    className="group relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-400/35 bg-sky-400/12 text-xs font-bold text-sky-200 shadow-sm shadow-sky-500/10 transition-all hover:border-sky-300 hover:bg-sky-400/18 hover:text-white hover:shadow-sky-400/20"
+                    className="group relative inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-300/55 bg-sky-500 text-xs font-bold text-white shadow-md shadow-sky-500/25 transition-all hover:border-sky-200 hover:bg-sky-400 hover:text-white hover:shadow-sky-400/30"
                     aria-label="How to use this tool"
                   >
                     i
@@ -1282,6 +1403,25 @@ export default function TaxCalculator() {
                       Tax Information
                     </span>
                   </button>
+                  {showGuideNudge && (
+                    <div className="absolute right-0 top-full z-20 mt-2 w-64 rounded-2xl border border-sky-300/30 bg-slate-900/95 p-3 text-left shadow-xl shadow-sky-900/20 backdrop-blur">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-xs font-bold uppercase tracking-widest text-sky-300">Start Here</div>
+                          <p className="mt-1 text-xs leading-relaxed text-slate-300">
+                            Tap the blue <span className="font-semibold text-white">i</span> button for tax information, deduction limits, and how to use this tool.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowGuideNudge(false)}
+                          className="text-xs font-semibold text-slate-400 transition-colors hover:text-white"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="inline-flex rounded-full border border-slate-700 bg-slate-800/80 p-1">
                     {[["annual", "Annual"], ["monthly", "Monthly"]].map(([key, label]) => (
                       <button
@@ -1466,13 +1606,13 @@ export default function TaxCalculator() {
               </div>
             ) : (
               <>
-                <div className="lg:hidden sticky top-0 z-10 -mx-4 mb-4 border-b border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur">
+                <div className="lg:hidden sticky top-3 z-10 mb-4 flex justify-start">
                   <button
                     onClick={() => {
                       setMobileScreen("form");
                       if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-200"
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/95 px-4 py-2 text-xs font-semibold text-slate-200 shadow-lg backdrop-blur"
                   >
                     ← Back to Calculator
                   </button>
@@ -1523,6 +1663,7 @@ export default function TaxCalculator() {
                     {results && (() => {
                       const r = results[activeTab];
                       const deductionRows = getDeductionRows(r, activeTab);
+                      const surchargeMeta = getSurchargeMeta(r, activeTab);
                       return (
                         <>
                           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1533,21 +1674,24 @@ export default function TaxCalculator() {
                           </div>
                           <div className="bg-slate-800/40 rounded-xl overflow-hidden">
                             {[
-                              ["Gross Salary", r.grossSalary],
-                              ["Standard Deduction", -r.standardDeduction],
-                              activeTab === "old" && r.hraExemption > 0 && ["HRA Exemption", -r.hraExemption],
+                              { label: "Gross Salary", value: r.grossSalary },
+                              { label: "Standard Deduction", value: -r.standardDeduction },
+                              activeTab === "old" && r.hraExemption > 0 && { label: "HRA Exemption", value: -r.hraExemption },
                               ...deductionRows,
-                              ["= Taxable Income", r.taxableIncome, true],
-                              ["Tax on Slabs", r.taxBeforeRebate],
-                              r.rebate > 0 && ["Rebate u/s 87A", -r.rebate],
-                              r.surcharge > 0 && ["Surcharge", r.surcharge],
-                              ["Health & Education Cess (4%)", r.cess],
-                              ["= Final Tax Liability", r.finalTax, true],
-                            ].filter(Boolean).map(([label, val, bold], i) => (
-                              <div key={i} className={`flex justify-between items-center px-4 py-2.5 text-sm border-b border-slate-700/50 last:border-0 ${bold ? "bg-slate-700/30" : ""}`}>
-                                <span className={bold ? "font-bold text-white" : "text-slate-400"}>{label}</span>
-                                <span className={`font-mono ${bold ? "font-bold text-amber-400" : val < 0 ? "text-emerald-400" : "text-white"}`}>
-                                  {val < 0 ? `-${fmtCurrency(Math.abs(val))}` : fmtCurrency(val)}
+                              { label: "= Taxable Income", value: r.taxableIncome, bold: true },
+                              { label: "Tax on Slabs", value: r.taxBeforeRebate },
+                              r.rebate > 0 && { label: "Rebate u/s 87A", value: -r.rebate },
+                              { label: `Surcharge (${surchargeMeta.rate}%)`, value: r.surcharge, info: surchargeMeta.info },
+                              { label: "Health & Education Cess (4%)", value: r.cess },
+                              { label: "= Final Tax Liability", value: r.finalTax, bold: true },
+                            ].filter(Boolean).map((row, i) => (
+                              <div key={i} className={`flex justify-between items-center px-4 py-2.5 text-sm border-b border-slate-700/50 last:border-0 ${row.bold ? "bg-slate-700/30" : ""}`}>
+                                <span className={`${row.bold ? "font-bold text-white" : "text-slate-400"} flex items-center`}>
+                                  {row.label}
+                                  {row.info && <DeductionTooltip text={row.info} />}
+                                </span>
+                                <span className={`font-mono ${row.bold ? "font-bold text-amber-400" : row.value < 0 ? "text-emerald-400" : "text-white"}`}>
+                                  {row.value < 0 ? `-${fmtCurrency(Math.abs(row.value))}` : fmtCurrency(row.value)}
                                 </span>
                               </div>
                             ))}
@@ -1603,9 +1747,19 @@ export default function TaxCalculator() {
           </div>
         </div>
 
+        <div className="mt-8">
+          <FAQAccordion />
+        </div>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-slate-500">
+            For informational purposes only. Please consult a qualified tax professional for personal tax advice.
+          </p>
+        </div>
+
                 {/* Footer */}
         <div className="mt-12 text-center text-xs text-slate-600 border-t border-slate-800 pt-6">
-          <p>Made by Vishal.</p>
+          <p className="font-semibold text-sky-300">Made by Vishal.</p>
           <p className="mt-1">
             <a
               href="https://vishalbuilds.com"
