@@ -344,17 +344,28 @@ function buildShareText(results) {
   const saving = Math.abs(results.old.finalTax - results.new.finalTax);
   return [
     "Check out Tax Finder - a free Indian income tax calculator for FY 2025-26.",
-    `Best regime for this case: ${betterRegime}.`,
+    `Best regime for my case: ${betterRegime}.`,
     `Difference: ${fmtCurrency(saving)}.`,
     "Compare old vs new regime here:",
     "https://tax.vishalbuilds.com",
   ].join(" ");
 }
 
+function buildGenericShareText(results) {
+  const betterRegime = results.old.finalTax <= results.new.finalTax ? "Old Regime" : "New Regime";
+  const saving = Math.abs(results.old.finalTax - results.new.finalTax);
+  return [
+    "Check out Tax Finder - a free Indian income tax calculator for FY 2025-26.",
+    `Best regime for my case: ${betterRegime}.`,
+    `Difference: ${fmtCurrency(saving)}.`,
+    "Compare old vs new regime here.",
+  ].join(" ");
+}
+
 async function shareGeneric(results) {
   if (typeof window === "undefined" || !results) return;
 
-  const text = buildShareText(results);
+  const text = buildGenericShareText(results);
   const shareData = {
     title: "Tax Finder",
     text,
