@@ -331,6 +331,58 @@ function getSavingsTips(oldResult, newResult, inputs) {
   return tips;
 }
 
+function shareOnWhatsApp(results) {
+  if (typeof window === "undefined" || !results) return;
+
+  const text = buildShareText(results);
+  const shareUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(shareUrl, "_blank", "noopener,noreferrer");
+}
+
+function buildShareText(results) {
+  const betterRegime = results.old.finalTax <= results.new.finalTax ? "Old Regime" : "New Regime";
+  const saving = Math.abs(results.old.finalTax - results.new.finalTax);
+  return [
+    "Check out Tax Finder - a free Indian income tax calculator for FY 2025-26.",
+    `Best regime for this case: ${betterRegime}.`,
+    `Difference: ${fmtCurrency(saving)}.`,
+    "Compare old vs new regime here:",
+    "https://tax.vishalbuilds.com",
+  ].join(" ");
+}
+
+async function shareGeneric(results) {
+  if (typeof window === "undefined" || !results) return;
+
+  const text = buildShareText(results);
+  const shareData = {
+    title: "Tax Finder",
+    text,
+    url: "https://tax.vishalbuilds.com",
+  };
+
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch {
+      return;
+    }
+  }
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      window.alert("Share message copied to clipboard.");
+      return;
+    } catch {
+      // fall through
+    }
+  }
+
+  window.prompt("Copy and share this message:", text);
+}
+
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // DOWNLOAD: PDF (print-ready HTML with Calibri font)
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -917,6 +969,26 @@ function TipCard({ tip }) {
         <div className="text-xs text-slate-400 leading-relaxed">{tip.detail}</div>
       </div>
     </div>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-current">
+      <path d="M20.52 3.48A11.86 11.86 0 0 0 12.07 0C5.53 0 .2 5.33.2 11.88c0 2.09.55 4.13 1.58 5.92L0 24l6.4-1.68a11.83 11.83 0 0 0 5.66 1.44h.01c6.54 0 11.87-5.33 11.87-11.88 0-3.17-1.23-6.14-3.42-8.4ZM12.08 21.7h-.01a9.8 9.8 0 0 1-4.99-1.37l-.36-.21-3.8 1 1.01-3.7-.23-.38A9.8 9.8 0 0 1 2.27 11.9c0-5.41 4.4-9.81 9.81-9.81 2.62 0 5.08 1.02 6.93 2.88a9.75 9.75 0 0 1 2.88 6.93c0 5.4-4.4 9.8-9.81 9.8Zm5.38-7.36c-.29-.14-1.72-.85-1.98-.95-.27-.1-.46-.14-.66.14-.19.28-.76.95-.93 1.15-.17.19-.34.21-.63.07-.29-.14-1.22-.45-2.32-1.43-.86-.77-1.44-1.72-1.61-2.01-.17-.28-.02-.43.13-.57.13-.13.29-.34.43-.51.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.5-.07-.14-.66-1.59-.9-2.18-.24-.58-.48-.5-.66-.51h-.56c-.19 0-.5.07-.76.36-.26.29-1 1-.99 2.43 0 1.43 1.04 2.81 1.18 3 .14.19 2.03 3.1 4.92 4.34.69.3 1.23.48 1.64.62.69.22 1.31.19 1.81.12.55-.08 1.72-.7 1.96-1.37.24-.67.24-1.25.17-1.37-.07-.12-.26-.19-.55-.34Z" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-none stroke-current" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="M8.59 13.51 15.42 17.49" />
+      <path d="M15.41 6.51 8.59 10.49" />
+    </svg>
   );
 }
 
@@ -1633,17 +1705,35 @@ export default function TaxCalculator() {
                       Saves you <span className="font-bold text-white">{fmtCurrency(saving)}</span> vs the other regime
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 shrink-0">
-                    <button onClick={() => downloadRealPDF(results.old, results.new, results.inputs)}
-                      className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20
-                        rounded-xl px-4 py-2.5 transition-all text-white text-xs font-semibold whitespace-nowrap">
-                      📄 Download PDF
-                    </button>
-                    <button onClick={() => downloadFormattedCSV(results.old, results.new, results.inputs)}
-                      className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20
-                        rounded-xl px-4 py-2.5 transition-all text-white text-xs font-semibold whitespace-nowrap">
-                      📊 Download CSV
-                    </button>
+                  <div className="flex flex-col gap-2 shrink-0 md:flex-row md:items-start md:gap-3">
+                    <div className="flex flex-nowrap items-center justify-end gap-2 self-end md:flex-col md:self-auto">
+                      <button onClick={() => shareOnWhatsApp(results)}
+                        aria-label="Share on WhatsApp"
+                        title="Share on WhatsApp"
+                        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/25
+                          rounded-xl transition-all text-emerald-200 whitespace-nowrap">
+                        <WhatsAppIcon />
+                      </button>
+                      <button onClick={() => shareGeneric(results)}
+                        aria-label="Share"
+                        title="Share"
+                        className="flex h-[42px] w-[42px] shrink-0 items-center justify-center bg-sky-500/12 hover:bg-sky-500/20 border border-sky-400/25
+                          rounded-xl transition-all text-sky-200 whitespace-nowrap">
+                        <ShareIcon />
+                      </button>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <button onClick={() => downloadRealPDF(results.old, results.new, results.inputs)}
+                        className="flex h-[42px] items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20
+                          rounded-xl px-4 py-2.5 transition-all text-white text-xs font-semibold whitespace-nowrap">
+                        📄 Download PDF
+                      </button>
+                      <button onClick={() => downloadFormattedCSV(results.old, results.new, results.inputs)}
+                        className="flex h-[42px] items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20
+                          rounded-xl px-4 py-2.5 transition-all text-white text-xs font-semibold whitespace-nowrap">
+                        📊 Download CSV
+                      </button>
+                    </div>
                   </div>
                 </div>
 
