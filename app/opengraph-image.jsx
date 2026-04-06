@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Tax Finder - Income Tax Calculator FY 2025-26";
+export const alt = "Tax Finder - Income Tax Calculator FY 2026-27";
 export const size = {
   width: 1200,
   height: 630,
@@ -110,7 +110,7 @@ export default function OpenGraphImage() {
                 fontWeight: 700,
               }}
             >
-              FY 2025-26
+              FY 2026-27
             </div>
           </div>
 

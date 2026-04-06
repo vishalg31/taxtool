@@ -2,9 +2,9 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 
 const siteUrl = "https://tax.vishalbuilds.com";
-const siteTitle = "Tax Finder - Income Tax Calculator FY 2025-26";
+const siteTitle = "Tax Finder - Income Tax Calculator FY 2026-27";
 const siteDescription =
-  "Free Indian income tax calculator for FY 2025-26. Compare old vs new regime, calculate slab tax, surcharge, cess, HRA, deductions, and monthly TDS instantly.";
+  "Free Indian income tax calculator for FY 2026-27. Compare old vs new regime, calculate slab tax, surcharge, cess, HRA, deductions, and monthly TDS instantly.";
 const socialImage = `${siteUrl}/opengraph-image`;
 
 export const metadata = {
@@ -14,12 +14,12 @@ export const metadata = {
   applicationName: "Tax Finder",
   keywords: [
     "income tax calculator india",
-    "tax calculator FY 2025-26",
+    "tax calculator FY 2026-27",
     "old vs new regime calculator",
     "salary tax calculator india",
     "hra tax calculator",
     "tds calculator india",
-    "income tax calculator 2025",
+    "income tax calculator 2026",
     "tax finder",
   ],
   authors: [{ name: "Vishal" }],

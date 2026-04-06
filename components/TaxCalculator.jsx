@@ -16,7 +16,7 @@ import {
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const TAX_RULES = {
-  fy: "2025-26",
+  fy: "2026-27",
   cessRate: 0.04,
   new: {
     standardDeduction: 75000,
@@ -93,7 +93,7 @@ function calculateSlabTax(taxableIncome, slabs) {
 function calculateHRA({ basicSalary, da = 0, hraReceived, rentPaid, city }) {
   if (!rentPaid || rentPaid <= 0 || !hraReceived || hraReceived <= 0) return 0;
   const basicPlusDA = basicSalary + da;
-  const metroCities = ["mumbai", "delhi", "kolkata", "chennai"];
+  const metroCities = ["mumbai", "delhi", "kolkata", "chennai", "bengaluru", "hyderabad", "pune", "ahmedabad"];
   const isMetro = metroCities.includes((city || "").toLowerCase());
   const condA = hraReceived;
   const condB = clampPositive(rentPaid - 0.1 * basicPlusDA);
@@ -343,7 +343,7 @@ function buildShareText(results) {
   const betterRegime = results.old.finalTax <= results.new.finalTax ? "Old Regime" : "New Regime";
   const saving = Math.abs(results.old.finalTax - results.new.finalTax);
   return [
-    "Check out Tax Finder - a free Indian income tax calculator for FY 2025-26.",
+    "Check out Tax Finder - a free Indian income tax calculator for FY 2026-27.",
     `Best regime for my case: ${betterRegime}.`,
     `Difference: ${fmtCurrency(saving)}.`,
     "Compare old vs new regime here:",
@@ -355,7 +355,7 @@ function buildGenericShareText(results) {
   const betterRegime = results.old.finalTax <= results.new.finalTax ? "Old Regime" : "New Regime";
   const saving = Math.abs(results.old.finalTax - results.new.finalTax);
   return [
-    "Check out Tax Finder - a free Indian income tax calculator for FY 2025-26.",
+    "Check out Tax Finder - a free Indian income tax calculator for FY 2026-27.",
     `Best regime for my case: ${betterRegime}.`,
     `Difference: ${fmtCurrency(saving)}.`,
     "Compare old vs new regime here.",
@@ -407,7 +407,7 @@ function downloadPDF(oldResult, newResult, inputs) {
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>Tax Finder Report FY 2025-26</title>
+<title>Tax Finder Report FY 2026-27</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -453,7 +453,7 @@ function downloadPDF(oldResult, newResult, inputs) {
 <div class="header">
   <div>
     <div class="logo">Tax<span>Finder</span></div>
-    <div style="font-size:12px;color:#555;margin-top:2px">Income Tax Calculator - FY 2025-26 (AY 2026-27)</div>
+    <div style="font-size:12px;color:#555;margin-top:2px">Income Tax Calculator - FY 2026-27 (AY 2027-28)</div>
   </div>
   <div class="meta">
     Gross Salary: <strong>${fmtCurrency(inputs.grossSalary)}</strong><br/>
@@ -531,7 +531,7 @@ ${tips.map(t => `<div class="tip"><span style="font-size:16px">${t.icon}</span><
 </div>
 
 <div class="footer">
-  <span>Tax Finder - Income Tax Calculator · FY 2025-26 · Free, no signup</span>
+  <span>Tax Finder - Income Tax Calculator · FY 2026-27 · Free, no signup</span>
   <span>Informational only. Consult a CA for professional tax advice.</span>
 </div>
 </body>
@@ -541,7 +541,7 @@ ${tips.map(t => `<div class="tip"><span style="font-size:16px">${t.icon}</span><
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "TaxClarity-Report-FY2025-26.html";
+  a.download = "Tax-Finder-Report-FY2026-27.html";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -739,7 +739,7 @@ function downloadRealPDF(oldResult, newResult, inputs) {
   y += 16;
   drawWrapped("Informational only. Consult a CA for professional tax advice.", margin, contentWidth, { size: 9.5, color: [148, 163, 184], lineGap: 12 });
 
-  doc.save("Tax-Finder-Income-Tax-Report-FY2025-26.pdf");
+  doc.save("Tax-Finder-Income-Tax-Report-FY2026-27.pdf");
 }
 
 function downloadCSV(oldResult, newResult, inputs) {
@@ -748,7 +748,7 @@ function downloadCSV(oldResult, newResult, inputs) {
   const tips = getSavingsTips(oldResult, newResult, inputs);
   const oldDeductions = oldResult.hraExemption + oldResult.totalDeductions;
   const rows = [
-    ["Tax Finder - Income Tax Calculator", "FY 2025-26 (AY 2026-27)", "", ""],
+    ["Tax Finder - Income Tax Calculator", "FY 2026-27 (AY 2027-28)", "", ""],
     ["Generated", new Date().toLocaleDateString("en-IN"), "", ""],
     ["Gross Salary", inputs.grossSalary, "", numberToWords(inputs.grossSalary) + " Rupees"],
     ["", "", "", ""],
@@ -781,7 +781,7 @@ function downloadCSV(oldResult, newResult, inputs) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "Tax-Finder-Income-Tax-Report-FY2025-26.csv";
+  a.download = "Tax-Finder-Income-Tax-Report-FY2026-27.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -797,7 +797,7 @@ function downloadFormattedCSV(oldResult, newResult, inputs) {
   const oldDeductions = oldResult.hraExemption + oldResult.totalDeductions;
 
   const rows = [
-    ["Tax Finder - Income Tax Calculator Report", "FY 2025-26 (AY 2026-27)", "", ""],
+    ["Tax Finder - Income Tax Calculator Report", "FY 2026-27 (AY 2027-28)", "", ""],
     ["Generated On", new Date().toLocaleDateString("en-IN"), "", ""],
     ["Gross Salary", inputs.grossSalary, "", numberToWords(inputs.grossSalary) + " Rupees"],
     ["Recommended Regime", better, "", "Lower tax liability"],
@@ -859,7 +859,7 @@ function downloadFormattedCSV(oldResult, newResult, inputs) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "Tax-Finder-Income-Tax-Report-FY2025-26.csv";
+  a.download = "Tax-Finder-Income-Tax-Report-FY2026-27.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1084,7 +1084,7 @@ function GuideModal({ open, onClose }) {
           <div>
             <div className="text-sm font-bold text-white">How To Use This Tool</div>
             <div className="mt-1 text-xs text-slate-400">
-              A quick guide to salary inputs, regimes, and deduction limits for FY 2025-26.
+              A quick guide to salary inputs, regimes, and deduction limits for FY 2026-27.
             </div>
           </div>
           <button
@@ -1122,6 +1122,7 @@ function GuideModal({ open, onClose }) {
               <p><span className="font-semibold text-white">80CCD(2):</span> capped from Basic + DA and employer type.</p>
               <p><span className="font-semibold text-white">80C group:</span> 80C, 80CCC, and 80CCD(1) share one combined limit.</p>
               <p><span className="font-semibold text-white">Medical sections:</span> senior citizen rules can change the cap.</p>
+              <p><span className="font-semibold text-white">HRA landlord PAN:</span> from FY 2026-27, landlord PAN is mandatory for HRA claims. Keep this ready before submitting declarations to your employer.</p>
               <p><span className="font-semibold text-white">Surcharge:</span> applies on taxable income, not gross salary. It starts at 10% above ₹50 lakh and 15% above ₹1 crore, with higher bands beyond that.</p>
             </div>
           </div>
@@ -1442,7 +1443,7 @@ export default function TaxCalculator() {
             <div className="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center text-slate-900 font-black text-base">$</div>
             <div>
               <div className="font-bold text-sm text-white tracking-tight">Tax Finder</div>
-              <div className="text-xs text-slate-500">FY 2025-26 · Free · No signup</div>
+              <div className="text-xs text-slate-500">FY 2026-27 · Free · No signup</div>
             </div>
           </div>
         </div>
@@ -1453,7 +1454,7 @@ export default function TaxCalculator() {
         {/* Hero */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/20 rounded-full px-4 py-1.5 text-amber-400 text-xs font-semibold mb-4">
-            Updated for Budget 2025-26
+            Updated for FY 2026-27 Rules
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-3" style={{ letterSpacing: "-0.03em" }}>
             Income Tax Calculator<br/>
@@ -1610,6 +1611,9 @@ export default function TaxCalculator() {
                       Enter monthly values. We&apos;ll convert them to annual automatically.
                     </p>
                   )}
+                  <p className="rounded-lg border border-sky-400/20 bg-sky-400/10 px-3 py-2 text-[11px] font-medium leading-relaxed text-sky-200">
+                    From FY 2026-27, landlord&apos;s PAN is mandatory for HRA claims. Ensure you have this before submitting investment declarations to your employer.
+                  </p>
                   <div className="grid grid-cols-2 gap-3">
                     <RupeeInput label="Basic Salary" hint={isMonthlyHraInput ? "Monthly" : "Annual"} value={form.basicLakh} onChange={set("basicLakh")} placeholder={isMonthlyHraInput ? "e.g. 50000" : "e.g. 600000"} />
                     <RupeeInput label="HRA Received" hint={isMonthlyHraInput ? "Monthly" : "Annual"} value={form.hraReceivedLakh} onChange={set("hraReceivedLakh")} placeholder={isMonthlyHraInput ? "e.g. 16000" : "e.g. 200000"} />
@@ -1624,6 +1628,10 @@ export default function TaxCalculator() {
                       <option value="delhi">Delhi (50%)</option>
                       <option value="kolkata">Kolkata (50%)</option>
                       <option value="chennai">Chennai (50%)</option>
+                      <option value="bengaluru">Bengaluru (50%)</option>
+                      <option value="hyderabad">Hyderabad (50%)</option>
+                      <option value="pune">Pune (50%)</option>
+                      <option value="ahmedabad">Ahmedabad (50%)</option>
                     </select>
                   </div>
                 </div>

@@ -9,7 +9,7 @@ export default function Page() {
     operatingSystem: "Web",
     url: "https://tax.vishalbuilds.com/",
     description:
-      "Free Indian income tax calculator for FY 2025-26. Compare old vs new regime, estimate tax, cess, surcharge, HRA, deductions, and monthly TDS.",
+      "Free Indian income tax calculator for FY 2026-27. Compare old vs new regime, estimate tax, cess, surcharge, HRA, deductions, and monthly TDS.",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -27,7 +27,7 @@ export default function Page() {
     },
     featureList: [
       "Old vs New regime comparison",
-      "Income tax calculation for FY 2025-26",
+      "Income tax calculation for FY 2026-27",
       "HRA and deduction support",
       "Surcharge and cess calculation",
       "PDF and CSV export",
