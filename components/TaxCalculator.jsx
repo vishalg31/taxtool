@@ -108,11 +108,13 @@ function calculateTaxEngine(input) {
   const afterStd = clampPositive(grossSalary - stdDed);
   let exemptions = 0;
   if (regime === "old") exemptions = calculateHRA({ basicSalary, da, hraReceived, rentPaid, city });
-  const isSenior = age >= 60;
+  const isNRI = deductions.isNRI || false;
+  const isSenior = !isNRI && age >= 60;
   const parentsAreSenior = deductions.parentsAreSenior || false;
   const applicableIds = new Set(
     ENABLED_DEDUCTIONS
       .filter((d) => d.regimes.includes(regime))
+      .filter((d) => !isNRI || d.nriEligible !== false)
       .filter((d) => {
         if (d.isSeniorOnly && !isSenior) return false;
         if (d.isSeniorExcluded && isSenior) return false;
@@ -164,17 +166,18 @@ function calculateTaxEngine(input) {
     const value = cap === null ? clampPositive(raw) : Math.min(raw, cap);
     totalDed += value;
     const config = ENABLED_DEDUCTIONS.find((d) => d.id === id);
-    deductionBreakdown[config?.section || id] = value;
+    deductionBreakdown[config?.label || config?.section || id] = value;
   });
   const taxableIncome = clampPositive(afterStd - exemptions - totalDed);
   let slabs = TAX_RULES[regime].slabs;
   if (regime === "old") {
-    if (age >= 80) slabs = TAX_RULES.old.superSeniorSlabs;
+    if (isNRI) slabs = TAX_RULES.old.slabs;
+    else if (age >= 80) slabs = TAX_RULES.old.superSeniorSlabs;
     else if (age >= 60) slabs = TAX_RULES.old.seniorSlabs;
   }
   const { tax: taxBeforeRebate, slabBreakdown } = calculateSlabTax(taxableIncome, slabs);
   const rebateRule = TAX_RULES[regime].rebate87A;
-  const rebate = taxableIncome <= rebateRule.maxTaxableIncome ? Math.min(taxBeforeRebate, rebateRule.maxRebate) : 0;
+  const rebate = isNRI ? 0 : (taxableIncome <= rebateRule.maxTaxableIncome ? Math.min(taxBeforeRebate, rebateRule.maxRebate) : 0);
   const taxAfterRebate = clampPositive(taxBeforeRebate - rebate);
   let surcharge = 0;
   for (const band of [...TAX_RULES[regime].surcharge].reverse()) {
@@ -246,16 +249,18 @@ function getSurchargeMeta(result, regime) {
 function getDeductionRows(result, regime) {
   if (!result?.deductionBreakdown) return [];
 
-  return Object.entries(result.deductionBreakdown).map(([label, value]) => {
+  return Object.entries(result.deductionBreakdown)
+    .filter(([label, value]) => label && Number(value) > 0)
+    .map(([label, value]) => {
     if (label === "80C / 80CCC / 80CCD(1)") {
-      return ["80C / 80CCC / 80CCD(1)", -value];
+      return { label: "80C / 80CCC / 80CCD(1)", value: -value };
     }
 
-    if (regime === "new" && label === "80CCD(2)") {
-      return ["80CCD(2) - Employer NPS", -value];
+    if (regime === "new" && label === "80CCD(2) - Employer NPS Contribution") {
+      return { label: "80CCD(2) - Employer NPS", value: -value };
     }
 
-    return [`${label} Deduction`, -value];
+    return { label, value: -value };
   });
 }
 
@@ -1030,6 +1035,11 @@ const FAQ_ITEMS = [
       "Yes. Tax Finder supports 80CCD(2) and caps it using Basic plus DA and employer type. This deduction is one of the few deductions that can also apply in the new regime.",
   },
   {
+    question: "Does Tax Finder support NRI tax calculation?",
+    answer:
+      "Yes. The tool supports NRI salary-income cases for Indian taxable income. It uses below-60 slabs for old regime regardless of age, does not apply Section 87A rebate for NRI in this tool, allows 80TTA where eligible, and excludes 80TTB.",
+  },
+  {
     question: "Can I claim medical insurance in this calculator?",
     answer:
       "Yes. The calculator supports Section 80D for health insurance premiums. You can enter separate amounts for self and family and for parents, and senior citizen limits are handled separately.",
@@ -1126,6 +1136,17 @@ function GuideModal({ open, onClose }) {
               <p><span className="font-semibold text-white">Surcharge:</span> applies on taxable income, not gross salary. It starts at 10% above ₹50 lakh and 15% above ₹1 crore, with higher bands beyond that.</p>
             </div>
           </div>
+          </div>
+
+          <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">
+            <div className="text-xs font-bold uppercase tracking-widest text-amber-300">NRI Rules In This Tool</div>
+            <div className="mt-3 space-y-2 text-sm text-slate-200">
+              <p><span className="font-semibold text-white">Age slabs:</span> NRI uses below-60 slabs in old regime, regardless of age.</p>
+              <p><span className="font-semibold text-white">Section 87A:</span> rebate is not applied for NRI in this tool.</p>
+              <p><span className="font-semibold text-white">80TTA:</span> allowed for NRI on eligible Indian savings-account interest.</p>
+              <p><span className="font-semibold text-white">80TTB:</span> not available for NRI in this tool.</p>
+              <p><span className="font-semibold text-white">Scope:</span> covers Indian taxable income only. Consult a CA for foreign income, DTAA claims, or NRE/NRO account specifics.</p>
+            </div>
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-800/40 p-4">
@@ -1289,7 +1310,7 @@ function AdvancedDeductionsPanel({ form, set, isSenior }) {
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const EMPTY = {
-  grossLakh: "", grossInputMode: "annual", age: "30", showHRA: false,
+  grossLakh: "", grossInputMode: "annual", isNRI: false, age: "30", showHRA: false,
   hraInputMode: "annual",
   basicLakh: "", daLakh: "", hraReceivedLakh: "", rentPaidLakh: "", city: "",
   npsEmployerType: "private",
@@ -1361,6 +1382,7 @@ export default function TaxCalculator() {
         section80U: Number(form.section80U) || 0,
         professionalTax: Number(form.professionalTax) || 0,
         childrenEducationAllowance: Number(form.childrenEducationAllowance) || 0,
+        isNRI: form.isNRI,
         employerType: form.npsEmployerType || "private",
         selfIsSenior: form.selfSenior,
         parentsAreSenior: form.parentsSenior,
@@ -1381,6 +1403,7 @@ export default function TaxCalculator() {
   const saving = results ? Math.abs(results.old.finalTax - results.new.finalTax) : 0;
   const showMobileResults = mobileScreen === "results";
   const isMonthlyGrossInput = form.grossInputMode === "monthly";
+  const isNRI = form.isNRI;
   const isMonthlyHraInput = form.hraInputMode === "monthly";
 
   useEffect(() => {
@@ -1463,6 +1486,23 @@ export default function TaxCalculator() {
           <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
             Enter your salary and investments. We'll compare both regimes instantly and tell you exactly where you stand.
           </p>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-sky-400/20 bg-sky-400/10 px-4 py-2.5">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-start sm:gap-3">
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-sky-300">
+              <span
+                aria-hidden="true"
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-sky-300/10 text-sky-200 animate-pulse"
+              >
+                ✦
+              </span>
+              <span>What&apos;s New</span>
+            </div>
+            <div className="text-xs text-sky-100/90">
+              NRI support, FY 2026-27 updates, new HRA metro cities, and revised allowance rules.
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -1564,6 +1604,30 @@ export default function TaxCalculator() {
                 <AmountHint value={form.grossLakh} />
               </div>
               <div>
+                <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Residential Status</label>
+                <div className="inline-flex rounded-full border border-slate-700 bg-slate-800/80 p-1">
+                  {[[false, "Resident"], [true, "NRI"]].map(([value, label]) => (
+                    <button
+                      key={label}
+                      onClick={() => set("isNRI")(value)}
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-all ${
+                        form.isNRI === value
+                          ? "bg-amber-400 text-slate-900"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {isNRI && (
+                <p className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-[11px] font-medium text-amber-300">
+                  NRI: No age-based exemption or Section 87A rebate applies. Covers Indian taxable income only. Consult a CA for foreign income, DTAA claims, or NRE/NRO account specifics.
+                </p>
+              )}
+              {!isNRI && (
+              <div>
                 <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1.5">Your Age</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[["Below 60", "30"], ["60 – 79", "65"], ["80 and above", "82"]].map(([label, val]) => (
@@ -1574,6 +1638,7 @@ export default function TaxCalculator() {
                   ))}
                 </div>
               </div>
+              )}
             </div>
 
             {/* HRA */}
@@ -1666,7 +1731,7 @@ export default function TaxCalculator() {
                   </label>
                 ))}
               </div>
-              <AdvancedDeductionsPanel form={form} set={set} isSenior={(parseInt(form.age, 10) || 30) >= 60} />
+              <AdvancedDeductionsPanel form={form} set={set} isSenior={!isNRI && (parseInt(form.age, 10) || 30) >= 60} />
             </div>
 
             {/* Buttons */}
@@ -1716,7 +1781,10 @@ export default function TaxCalculator() {
                     : "bg-gradient-to-r from-emerald-400/20 to-emerald-400/5 border border-emerald-400/30"
                 }`}>
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Best Regime for You</div>
+                    <div className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">
+                      Best Regime for You
+                      {isNRI && <span className="ml-2 font-black text-white">NRI</span>}
+                    </div>
                     <div className="text-2xl font-black text-white" style={{ letterSpacing: "-0.02em" }}>
                       {betterRegime === "new" ? "🆕 New Regime" : "🏛️ Old Regime"}
                     </div>
