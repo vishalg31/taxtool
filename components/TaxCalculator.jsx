@@ -152,6 +152,7 @@ function calculateTaxEngine(input) {
     "section80U",
     "professionalTax",
     "childrenEducationAllowance",
+    "lta",
   ].forEach((id) => {
     if (!applicableIds.has(id)) return;
     const raw = deductions[id] || 0;
@@ -918,7 +919,7 @@ function RupeeInput({ label, hint, value, onChange, placeholder = "0", tooltip, 
         hasValue ? "text-amber-300" : "text-slate-400 group-focus-within:text-amber-300"
       }`}>
         <span>{label}</span>
-        {hint && <span className="text-slate-600 ml-1"> · {hint}</span>}
+        {hint && <span className="text-slate-400 ml-1"> · {hint}</span>}
         {tooltip && <DeductionTooltip text={tooltip} />}
       </label>
       {eligibility && (
@@ -1319,6 +1320,7 @@ const EMPTY = {
   section80G: "", section80GG: "", section80TTA: "", section80TTB: "",
   section80DD: "", section80DDB: "", section80U: "", professionalTax: "",
   childrenEducationAllowance: "",
+  lta: "",
   selfSenior: false, parentsSenior: false,
 };
 
@@ -1382,6 +1384,7 @@ export default function TaxCalculator() {
         section80U: Number(form.section80U) || 0,
         professionalTax: Number(form.professionalTax) || 0,
         childrenEducationAllowance: Number(form.childrenEducationAllowance) || 0,
+        lta: Number(form.lta) || 0,
         isNRI: form.isNRI,
         employerType: form.npsEmployerType || "private",
         selfIsSenior: form.selfSenior,
@@ -1701,7 +1704,7 @@ export default function TaxCalculator() {
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-slate-500">Click "I pay rent" to add HRA details for old regime.</p>
+                <p className="text-xs text-slate-400">Click "I pay rent" to add HRA details for old regime.</p>
               )}
             </div>
 
