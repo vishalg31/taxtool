@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { Fragment, useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import { jsPDF } from "jspdf";
 import {
   ADVANCED_DEDUCTIONS,
@@ -911,12 +911,12 @@ function DeductionTooltip({ text }) {
   );
 }
 
-function RupeeInput({ label, hint, value, onChange, placeholder = "0", tooltip, eligibility }) {
+function RupeeInput({ label, hint, value, onChange, placeholder = "0", tooltip, eligibility, highlight = false }) {
   const hasValue = value !== "" && value !== "0";
   return (
     <div className="group">
       <label className={`flex items-center text-xs mb-1 transition-colors ${
-        hasValue ? "text-amber-300" : "text-slate-400 group-focus-within:text-amber-300"
+        hasValue || highlight ? "text-amber-300" : "text-slate-400 group-focus-within:text-amber-300"
       }`}>
         <span>{label}</span>
         {hint && <span className="text-slate-400 ml-1"> · {hint}</span>}
@@ -933,8 +933,12 @@ function RupeeInput({ label, hint, value, onChange, placeholder = "0", tooltip, 
           value={value}
           onChange={e => onChange(sanitizeDigits(e.target.value))}
           placeholder={placeholder}
-          className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-7 pr-3 py-2.5 text-white text-sm
-            focus:outline-none focus:border-amber-400 transition-all placeholder-slate-600"
+          className={`w-full bg-slate-800 border rounded-xl pl-7 pr-3 py-2.5 text-white text-sm
+            focus:outline-none transition-all placeholder-slate-600 ${
+              highlight
+                ? "border-amber-400 ring-2 ring-amber-400/20"
+                : "border-slate-700 focus:border-amber-400"
+            }`}
         />
       </div>
       <AmountHint value={value} />
@@ -1180,9 +1184,10 @@ function GuideModal({ open, onClose }) {
   );
 }
 
-function AdvancedDeductionsPanel({ form, set, isSenior }) {
+function AdvancedDeductionsPanel({ form, set, isSenior, errors, setErrors }) {
   const [open, setOpen] = useState(false);
   const npsUsesHraBasic = form.showHRA && form.basicLakh;
+  const shouldHighlightNpsBasic = (Number(form.section80CCD2) || 0) > 0 && !(Number(form.basicLakh) || 0);
   const npsBasicSalary =
     form.showHRA && form.hraInputMode === "monthly"
       ? (Number(form.basicLakh) || 0) * 12
@@ -1276,7 +1281,11 @@ function AdvancedDeductionsPanel({ form, set, isSenior }) {
                       label="Basic Salary for 80CCD(2)"
                       hint={npsUsesHraBasic && form.hraInputMode === "monthly" ? "Using HRA monthly value" : "Annual"}
                       value={form.basicLakh}
-                      onChange={set("basicLakh")}
+                      highlight={shouldHighlightNpsBasic}
+                      onChange={(value) => {
+                        set("basicLakh")(value);
+                        if (errors.basicLakh) setErrors((prev) => ({ ...prev, basicLakh: undefined }));
+                      }}
                       placeholder="e.g. 600000"
                     />
                     <RupeeInput
@@ -1287,6 +1296,9 @@ function AdvancedDeductionsPanel({ form, set, isSenior }) {
                       placeholder="e.g. 0"
                     />
                   </div>
+                  {errors.basicLakh && (
+                    <p className="mt-1 text-xs font-medium text-red-400">{errors.basicLakh}</p>
+                  )}
                   <div className={`rounded-lg border px-3 py-2 text-xs ${
                     npsCap > 0
                       ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
@@ -1335,6 +1347,7 @@ export default function TaxCalculator() {
   const [calculated, setCalculated] = useState(false);
   const [mobileScreen, setMobileScreen] = useState("form");
   const [showStickyBrand, setShowStickyBrand] = useState(false);
+  const resultsPanelRef = useRef(null);
 
   const set = (key) => (val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -1353,6 +1366,10 @@ export default function TaxCalculator() {
     const grossSalary = (Number(form.grossLakh) || 0) * grossMultiplier;
     if (!grossSalary) {
       setErrors({ grossLakh: "Gross salary is required." });
+      return;
+    }
+    if ((Number(form.section80CCD2) || 0) > 0 && !(Number(form.basicLakh) || 0)) {
+      setErrors({ basicLakh: "Basic Salary is required to calculate the 80CCD(2) cap." });
       return;
     }
     setErrors({});
@@ -1415,6 +1432,11 @@ export default function TaxCalculator() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!calculated || typeof window === "undefined" || window.innerWidth < 1024) return;
+    resultsPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [calculated, results]);
 
   useEffect(() => {
     const storageKey = "taxfinder-guide-nudge-seen";
@@ -1734,7 +1756,7 @@ export default function TaxCalculator() {
                   </label>
                 ))}
               </div>
-              <AdvancedDeductionsPanel form={form} set={set} isSenior={!isNRI && (parseInt(form.age, 10) || 30) >= 60} />
+              <AdvancedDeductionsPanel form={form} set={set} errors={errors} setErrors={setErrors} isSenior={!isNRI && (parseInt(form.age, 10) || 30) >= 60} />
             </div>
 
             {/* Buttons */}
@@ -1754,7 +1776,7 @@ export default function TaxCalculator() {
           </div>
 
           {/* RIGHT */}
-          <div className={`lg:col-span-3 space-y-4 fixed inset-0 z-40 overflow-y-auto bg-slate-950 px-4 py-6 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:static lg:z-auto lg:overflow-visible lg:bg-transparent lg:px-0 lg:py-0 lg:transition-none ${
+          <div ref={resultsPanelRef} className={`lg:col-span-3 space-y-4 fixed inset-0 z-40 overflow-y-auto bg-slate-950 px-4 py-6 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:static lg:z-auto lg:overflow-visible lg:bg-transparent lg:px-0 lg:py-0 lg:transition-none ${
             showMobileResults ? "translate-x-0" : "translate-x-full pointer-events-none"
           } lg:translate-x-0 lg:pointer-events-auto`}>
             {!calculated ? (
